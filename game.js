@@ -1,30 +1,3 @@
-// --- SISTEMA DE LOJA ADAPTADO POR CLASSE ---
-function openShop() {
-    changeScreen('shop'); // Vai para a tela da loja
-    const potionPrice = 30 + (zonaAtual * 5);
-    logMessage(`[MERCADOR] Poção Pequena custa ${potionPrice} Ouro.`);
-
-    // Itens por classe
-    let classItems = '';
-    if (player.class === 'GUERREIRO') {
-        classItems = `
-            <button onclick="buyItem('Espada de Ferro', 50, 'ATK', 5)">Espada de Ferro (+5 ATK) - 50 Ouro</button>
-            <button onclick="buyItem('Armadura de Couro', 40, 'DEF', 5)">Armadura de Couro (+5 DEF) - 40 Ouro</button>
-        `;
-    } else if (player.class === 'MAGO') {
-        classItems = `
-            <button onclick="buyItem('Cajado Arcano', 50, 'ATK', 5)">Cajado Arcano (+5 ATK) - 50 Ouro</button>
-            <button onclick="buyItem('Manto de Magia', 40, 'DEF', 5)">Manto de Magia (+5 DEF) - 40 Ouro</button>
-        `;
-    } else if (player.class === 'ARQUEIRO') {
-        classItems = `
-            <button onclick="buyItem('Arco Longo', 50, 'ATK', 5)">Arco Longo (+5 ATK) - 50 Ouro</button>
-            <button onclick="buyItem('Cota de Couro', 40, 'DEF', 5)">Cota de Couro (+5 DEF) - 40 Ouro</button>
-        `;
-    }
-
-    const shopHtml = `
-        <p>Seu Ouro: <span id="player-gold-shop">${player.gold}</span></p>
 // --- DADOS E VARIÁVEIS DO JOGO ---
 
 const ZONAS = [
