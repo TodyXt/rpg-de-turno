@@ -4,7 +4,7 @@ const ZONAS = [
     { nome: "FLORESTA PROIBIDA", lvlMin: 1, inimigos: ["GOBLIN", "SLIME", "LOBO SELVAGEM"], boss: { nome: "REI GOBLIN", sprite: "👑" }, sprite: "🌳" },
     { nome: "CAVERNAS SOMBRIAS", lvlMin: 5, inimigos: ["MORCEGO GIGANTE", "ARANHA VENENOSA", "ESQUELETO"], boss: { nome: "O ABOMINÁVEL", sprite: "💀" }, sprite: "⛰️" },
     { nome: "RUÍNAS ESQUECIDAS", lvlMin: 10, inimigos: ["FANTASMA", "GOLEM DE PEDRA", "MÚMIA"], boss: { nome: "LICH ANTIGO", sprite: "👻" }, sprite: "🏛️" },
-    { nome: "MONTANHAS VULCÁNICAS", lvlMin: 15, inimigos: ["SALAMANDRA", "ELEMENTAR DE FOGO", "DRAGÃOZINHO"], boss: { nome: "DRAKE DE LAVA", sprite: "🐉" }, sprite: "🌋" },
+    { nome: "MONTANHAS VULCÂNICAS", lvlMin: 15, inimigos: ["SALAMANDRA", "ELEMENTAR DE FOGO", "DRAGÃOZINHO"], boss: { nome: "DRAKE DE LAVA", sprite: "🐉" }, sprite: "🌋" },
     { nome: "CASTELO DO CAOS", lvlMin: 20, inimigos: ["GUARDA NEGRO", "DEMÔNIO MENOR", "VAMPIRO"], boss: { nome: "O TIRANO SUPREMO", sprite: "😈" }, sprite: "🏰" }
 ];
 
@@ -47,7 +47,10 @@ class Player {
         this.hpMax += 10;
         this.hp = this.hpMax;
         logMessage(`[LVL UP] VOCÊ ALCANÇOU O NÍVEL ${this.lvl}! PONTOS GANHOS.`);
-        if (!currentEnemy) changeScreen('stats'); 
+        
+        if (!currentEnemy) {
+            changeScreen('stats'); 
+        }
     }
 }
 
@@ -85,9 +88,14 @@ class Enemy {
 
 function changeScreen(screenId) {
     const screens = document.querySelectorAll('.game-screen');
-    screens.forEach(screen => screen.classList.remove('active-screen'));
+    screens.forEach(screen => {
+        screen.classList.remove('active-screen');
+    });
+
     const targetScreen = document.getElementById(`screen-${screenId}`);
-    if (targetScreen) targetScreen.classList.add('active-screen');
+    if (targetScreen) {
+        targetScreen.classList.add('active-screen');
+    }
 }
 
 // --- FUNÇÕES DE INTERFACE ---
@@ -104,7 +112,7 @@ function updateStats() {
     document.getElementById('player-stats').innerHTML = `<h2>STATUS GERAL</h2>${statsHtml}`;
     document.getElementById('player-stats-summary').innerHTML = statsHtml;
     document.getElementById('player-gold-shop').textContent = player.gold;
-
+    
     const heroHpPercent = (player.hp / player.hpMax) * 100;
     document.getElementById('hero-hp-bar').style.width = heroHpPercent + '%';
     document.getElementById('hero-name-display').textContent = player.name;
@@ -120,13 +128,16 @@ function updateStats() {
         hudEnemy.classList.remove('hidden-enemy-hud');
         enemyModel.classList.remove('hidden-enemy');
         enemyModel.classList.add('monster-appeared'); 
+
         const enemyHpPercent = (currentEnemy.hp / currentEnemy.initialHp) * 100;
         document.getElementById('enemy-hp-bar').style.width = enemyHpPercent + '%';
         document.getElementById('enemy-name-display').textContent = currentEnemy.name + ` (Lvl ${currentEnemy.lvl})`;
         document.getElementById('enemy-sprite').textContent = currentEnemy.sprite;
+        
         document.getElementById('enemy-hp-detail').textContent = Math.max(0, currentEnemy.hp);
         document.getElementById('enemy-atk-detail').textContent = currentEnemy.attack;
         document.getElementById('enemy-def-detail').textContent = currentEnemy.defense;
+
     } else {
         hudEnemy.classList.add('hidden-enemy-hud');
         enemyModel.classList.add('hidden-enemy');
@@ -134,15 +145,34 @@ function updateStats() {
     }
 }
 
-function updateActions(buttonsHtml) { document.getElementById('action-area').innerHTML = buttonsHtml; }
-function logMessage(message) { const logBox = document.getElementById('log-box'); logBox.innerHTML += `<p>${message}</p>`; logBox.scrollTop = logBox.scrollHeight; }
-function triggerAnimation(targetElementId, animationClass) { const el = document.getElementById(targetElementId); el.classList.add(animationClass); setTimeout(() => { el.classList.remove(animationClass); isAnimating = false; }, 400); }
+function updateActions(buttonsHtml) {
+    document.getElementById('action-area').innerHTML = buttonsHtml;
+}
 
-// --- FLUXO DO JOGO ---
+function logMessage(message) {
+    const logBox = document.getElementById('log-box');
+    logBox.innerHTML += `<p>${message}</p>`;
+    logBox.scrollTop = logBox.scrollHeight;
+}
+
+function triggerAnimation(targetElementId, animationClass) {
+    const el = document.getElementById(targetElementId);
+    el.classList.add(animationClass);
+    setTimeout(() => {
+        el.classList.remove(animationClass);
+        isAnimating = false;
+    }, 400); 
+}
+
+// --- FUNÇÕES DE FLUXO DO JOGO ---
 
 function showClassSelection() {
     const name = document.getElementById('name-input').value.trim();
-    if (!name) return logMessage("[ERRO] DIGITE SEU NOME PARA CONTINUAR.");
+    if (!name) {
+        logMessage("[ERRO] DIGITE SEU NOME PARA CONTINUAR.");
+        return;
+    }
+    
     const initialArea = document.getElementById('initial-area');
     initialArea.innerHTML = `
         <p class="ascii-font">ESCOLHA SUA CLASSE, ${name}:</p>
@@ -161,51 +191,226 @@ function startGame(name, className) {
     showMainMenu();
 }
 
-// --- DISTRIBUIÇÃO DE PONTOS, MENU PRINCIPAL, COMBATE ---
-// (mantido exatamente igual ao seu código original)
+// --- DISTRIBUIÇÃO DE PONTOS ---
 
-// --- SISTEMA DE LOJA (MERCADOR) ADAPTADO POR CLASSE ---
-function openShop() {
-    changeScreen('shop');
-    const potionPrice = 30 + (zonaAtual * 5);
-    logMessage(`[MERCADOR] POÇÃO PEQUENA CUSTA ${potionPrice} OURO.`);
+function showStatDistribution() {
+    changeScreen('stats');
+    logMessage(`[LVL UP] VOCÊ TEM ${player.statPoints} PONTOS PARA DISTRIBUIR!`);
+    
+    const currentHpDisplay = player.hpMax; 
+    
+    const buttons = `
+        <p>PONTOS RESTANTES: <span style="color:#ff0000">${player.statPoints}</span></p>
+        <button class="btn-stat" onclick="distributePoint('HP', 10)">+10 HP MÁX (ATUAL: ${currentHpDisplay})</button>
+        <button class="btn-stat" onclick="distributePoint('ATK', 3)">+3 ATK (ATUAL: ${player.attack})</button>
+        <button class="btn-stat" onclick="distributePoint('DEF', 2)">+2 DEF (ATUAL: ${player.defense})</button>
+        <br>
+        <button onclick="showMainMenu()" ${player.statPoints > 0 ? 'disabled' : ''}>CONTINUAR JORNADA</button>
+    `;
+    document.getElementById('stats-distribution-area').innerHTML = buttons;
+    updateStats();
+}
 
-    let classItems = '';
-    if (player.class === 'GUERREIRO') {
-        classItems = `
-            <button onclick="buyItem('Espada de Ferro', 50, 'ATK', 5)">Espada de Ferro (+5 ATK) - 50 Ouro</button>
-            <button onclick="buyItem('Armadura de Couro', 40, 'DEF', 5)">Armadura de Couro (+5 DEF) - 40 Ouro</button>
-        `;
-    } else if (player.class === 'MAGO') {
-        classItems = `
-            <button onclick="buyItem('Cajado Arcano', 50, 'ATK', 5)">Cajado Arcano (+5 ATK) - 50 Ouro</button>
-            <button onclick="buyItem('Manto de Magia', 40, 'DEF', 5)">Manto de Magia (+5 DEF) - 40 Ouro</button>
-        `;
-    } else if (player.class === 'ARQUEIRO') {
-        classItems = `
-            <button onclick="buyItem('Arco Longo', 50, 'ATK', 5)">Arco Longo (+5 ATK) - 50 Ouro</button>
-            <button onclick="buyItem('Cota de Couro', 40, 'DEF', 5)">Cota de Couro (+5 DEF) - 40 Ouro</button>
-        `;
+function distributePoint(stat, amount) {
+    if (player.statPoints <= 0) {
+        logMessage("[ERRO] SEM PONTOS.");
+        return;
+    }
+    
+    player.statPoints--;
+    
+    if (stat === 'HP') {
+        player.hpMax += amount;
+        player.hp += amount;
+    } else if (stat === 'ATK') {
+        player.attack += amount;
+    } else if (stat === 'DEF') {
+        player.defense += amount;
+    }
+
+    logMessage(`[STATUS] +${amount} EM ${stat}!`);
+    updateStats();
+    showStatDistribution();
+}
+
+// --- MENU PRINCIPAL ---
+
+function showMainMenu() {
+    changeScreen('main');
+    if (player.statPoints > 0) {
+        showStatDistribution();
+        return;
+    }
+    
+    currentEnemy = null;
+    updateStats();
+    
+    const zona = ZONAS[zonaAtual];
+
+    let advanceButton = "";
+    if (ZONAS[zonaAtual + 1] && player.lvl >= ZONAS[zonaAtual + 1].lvlMin) {
+        advanceButton = `<button onclick="advanceZone()" class="btn-advance">➡️ AVANÇAR PARA ${ZONAS[zonaAtual + 1].nome}</button>`;
     }
 
     const buttons = `
-        <p>SEU OURO: <span id="player-gold-shop">${player.gold}</span></p>
-        <button onclick="buyItem('potion', ${potionPrice})">COMPRAR POÇÃO (${potionPrice} OURO)</button>
-        ${classItems}
-        <button onclick="changeScreen('main')">VOLTAR AO MENU</button>
+        <p>AÇÃO NA ${zona.nome} ${zona.sprite}:</p>
+        <button onclick="hunt(false)">1. EXPLORAR (MONSTRO COMUM)</button>
+        <button onclick="hunt(true)">2. DESAFIAR ${zona.boss.nome} (BOSS)</button>
+        ${advanceButton}
+        <button onclick="openShop()">3. VISITAR O MERCADOR</button>
     `;
-    document.getElementById('shop-area').innerHTML = buttons;
-    updateStats();
+    updateActions(buttons);
 }
 
-function buyItem(item, price, statType = null, statValue = 0) {
-    if (player.gold >= price) {
-        player.gold -= price;
-        logMessage(`[COMPRA] ${item.toUpperCase()} ADQUIRIDO!`);
-        if (statType === 'ATK') { player.attack += statValue; logMessage(`[STATUS] +${statValue} ATK!`); }
-        else if (statType === 'DEF') { player.defense += statValue; logMessage(`[STATUS] +${statValue} DEF!`); }
-        else if (item === 'potion') { player.potions++; logMessage(`[LOOT] POÇÃO ADICIONADA!`); }
-    } else logMessage(`[ERRO] OURO INSUFICIENTE!`);
-    updateStats();
-    openShop();
+// --- AVANÇO DE ZONA ---
+
+function advanceZone() {
+    if (ZONAS[zonaAtual + 1] && player.lvl >= ZONAS[zonaAtual + 1].lvlMin) {
+        zonaAtual++;
+        logMessage(`[ZONA] VOCÊ ENTROU NA ${ZONAS[zonaAtual].nome}!`);
+        showMainMenu();
+    } else {
+        logMessage("[ZONA] NÍVEL INSUFICIENTE PARA AVANÇAR.");
+        showMainMenu();
+    }
 }
+
+// --- FUNÇÕES DE CAÇA ---
+
+function hunt(isBoss) {
+    const zona = ZONAS[zonaAtual];
+    let lvlMonstro = zona.lvlMin + Math.floor(Math.random() * 3);
+    
+    if (isBoss) {
+        lvlMonstro = Math.max(player.lvl, zona.lvlMin) + 2; 
+        currentEnemy = new Enemy(lvlMonstro, true);
+        logMessage(`[BATALHA] CHEFE: ${currentEnemy.sprite} ${currentEnemy.name} APARECEU!`);
+    } else {
+        currentEnemy = new Enemy(lvlMonstro, false);
+        logMessage(`[BATALHA] ${currentEnemy.sprite} ${currentEnemy.name} (LVL ${currentEnemy.lvl}) APARECEU!`);
+    }
+    
+    updateStats();
+    showBattleMenu();
+}
+
+// --- BATALHAS ---
+
+function showBattleMenu() {
+    updateStats();
+    if (isAnimating) return;
+    
+    const buttons = `
+        <button onclick="playerAttack('normal')">1. ATK BÁSICO</button>
+        <button onclick="playerAttack('special')">2. HABILIDADE ÚNICA</button>
+        <button onclick="usePotion()">3. USAR POÇÃO (${player.potions})</button>
+        <button onclick="attemptToFlee()">4. TENTAR FUGIR</button>
+    `;
+    updateActions(buttons);
+}
+
+function attemptToFlee() {
+    if (isAnimating) return;
+    isAnimating = true;
+
+    if (currentEnemy.isBoss) {
+        logMessage("[FUGA] É IMPOSSÍVEL FUGIR DE UM CHEFE!");
+        setTimeout(enemyTurn, 800);
+        return;
+    }
+    
+    const fleeChance = 0.6 + ((player.lvl - currentEnemy.lvl) * 0.05);
+
+    if (Math.random() < fleeChance) {
+        logMessage("[FUGA] VOCÊ FUGIU COM SUCESSO!");
+        currentEnemy = null;
+        isAnimating = false;
+        setTimeout(showMainMenu, 500);
+    } else {
+        logMessage("[FUGA] FALHOU! O INIMIGO BLOQUEOU.");
+        setTimeout(enemyTurn, 800);
+    }
+}
+
+function playerAttack(type) {
+    if (!currentEnemy || isAnimating) return;
+    isAnimating = true;
+    triggerAnimation('hero-sprite', 'attacking');
+
+    let damage = 0;
+    
+    if (type === 'normal') {
+        damage = player.attack + Math.floor(Math.random() * 8);
+        logMessage(`[AÇÃO] ${player.class} USA ATK BÁSICO.`);
+    } else if (type === 'special') {
+        
+        let msg = "";
+        
+        if (player.class === 'GUERREIRO') { 
+            damage = player.attack + 20 + Math.floor(Math.random() * 10);
+            if (Math.random() < 0.1) {
+                 damage *= 2;
+                 msg = "[HABILIDADE] GUERREIRO ATIVOU FÚRIA! DANO DOBRADO!";
+            } else {
+                 msg = "[HABILIDADE] GUERREIRO USA FÚRIA DO MACHADO!";
+            }
+        }
+        
+        if (player.class === 'MAGO') { 
+            damage = player.attack + 30 + Math.floor(Math.random() * 15);
+            currentEnemy.defense = Math.max(0, currentEnemy.defense / 2); 
+            msg = "[HABILIDADE] MAGO LANÇA EXPLOSÃO ARCANA!";
+        }
+        
+        if (player.class === 'ARQUEIRO') { 
+            damage = player.attack + 15 + Math.floor(Math.random() * 10);
+            if (Math.random() < 0.4) {
+                damage = damage * 1.5;
+                msg = "[HABILIDADE] ARQUEIRO ACERTA TIRO PRECISO! (CRÍTICO)";
+            } else {
+                msg = "[HABILIDADE] ARQUEIRO USA TIRO PRECISO.";
+            }
+        }
+        
+        logMessage(msg);
+    }
+    
+    const finalDamage = Math.max(0, Math.floor(damage - currentEnemy.defense));
+    currentEnemy.hp -= finalDamage;
+    logMessage(`[DANO] CAUSOU ${finalDamage} DE DANO AO ${currentEnemy.name}!`);
+    
+    if (player.class === 'MAGO' && type === 'special') {
+         currentEnemy.defense = new Enemy(currentEnemy.lvl, currentEnemy.isBoss).defense; 
+    }
+
+    triggerAnimation('enemy-sprite', 'receiving-damage'); 
+
+    updateStats(); 
+
+    if (currentEnemy.hp <= 0) {
+        setTimeout(victory, 800);
+    } else {
+        setTimeout(enemyTurn, 800);
+    }
+}
+
+function usePotion() {
+    if (isAnimating) return;
+    isAnimating = true;
+
+    if (player.potions > 0) {
+        const heal = Math.floor(player.hpMax * 0.3) + 20;
+        player.hp = Math.min(player.hpMax, player.hp + heal);
+        player.potions--;
+        logMessage(`[CURA] VOCÊ USOU POÇÃO E RECUPEROU ${heal} HP.`);
+        updateStats();
+        setTimeout(enemyTurn, 500);
+    } else {
+        logMessage("[ERRO] SEM POÇÕES RESTANTES!");
+        isAnimating = false;
+        showBattleMenu();
+    }
+}
+
+function enemyTurn() {
+    if (
